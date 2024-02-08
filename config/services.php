@@ -39,5 +39,9 @@ return [
             'client_id' => env('TWITTER_CLIENT_ID'),
             'client_secret' => env('TWITTER_CLIENT_SECRET'),
         ],
+        'bluesky' => [
+            'handle' => env('BLUESKY_HANDLE'),
+            'password' => env('BLUESKY_PASSWORD'),
+        ],
     ],
 ];

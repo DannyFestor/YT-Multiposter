@@ -8,6 +8,7 @@ use App\Enums\SnsServices;
 use App\Http\Requests\SnsMessageRequest;
 use App\Models\SnsMessage;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Http;
 
 class SnsMessageController extends Controller
 {
@@ -27,19 +28,11 @@ class SnsMessageController extends Controller
         }
 
         if ($request->has(SnsServices::BlueSky->value) && $request->get(SnsServices::BlueSky->value) === 'on') {
-            // TODO: POST TO BlueSky
-            $snsMessage->snsLinks()->create([
-                'service' => SnsServices::BlueSky,
-                'url' => \Str::random(), // TODO: RETRIEVE URL FROM BlueSky
-            ]);
+            $this->postToBlueSky($request->get('content'), $snsMessage);
         }
 
         if ($request->has(SnsServices::Mastodon->value) && $request->get(SnsServices::Mastodon->value) === 'on') {
-            // TODO: POST TO Mastodon
-            $snsMessage->snsLinks()->create([
-                'service' => SnsServices::Mastodon,
-                'url' => \Str::random(), // TODO: RETRIEVE URL FROM Mastodon
-            ]);
+            $this->postToMastodon($snsMessage);
         }
 
         return redirect()->route('index')->with('success', 'Messages sent');
@@ -47,6 +40,7 @@ class SnsMessageController extends Controller
 
     public function postToTwitter(string $content, SnsMessage $snsMessage): void
     {
+        // https://developer.twitter.com/en/portal/projects-and-apps
         $connection = new TwitterOAuth(
             config('services.sns.twitter.api_key'),
             config('services.sns.twitter.api_secret'),
@@ -78,5 +72,74 @@ class SnsMessageController extends Controller
                 'url' => $response->data->id,
             ]);
         }
+    }
+
+    public function postToBlueSky(string $content, ?SnsMessage $snsMessage): void
+    {
+        // https://www.docs.bsky.app/docs/get-started
+        /*
+         * curl -X POST https://bsky.social/xrpc/com.atproto.server.createSession \
+            -H "Content-Type: application/json" \
+            -d '{"identifier": "'"$BLUESKY_HANDLE"'", "password": "'"$BLUESKY_PASSWORD"'"}'
+         */
+        $sessionResponse = Http::contentType('application/json')
+            ->post('https://bsky.social/xrpc/com.atproto.server.createSession', [
+                "identifier" => config('services.sns.bluesky.handle'),
+                "password" => config('services.sns.bluesky.password'),
+            ]);
+
+        $session = $sessionResponse->json();
+        /**
+        {
+            ...
+            "accessJwt": "<ACCESS TOKEN>",
+            "refreshJwt": "<REFRESH TOKEN>"
+        }
+         */
+
+        if (!isset($session['accessJwt'])) {
+            return;
+        }
+
+        // curl -X POST https://bsky.social/xrpc/com.atproto.repo.createRecord \
+        //    -H "Authorization: Bearer $ACCESS_JWT" \
+        //    -H "Content-Type: application/json" \
+        //    -d "{\"repo\": \"$BLUESKY_HANDLE\", \"collection\": \"app.bsky.feed.post\", \"record\": {\"text\": \"Hello world! I posted this via the API.\", \"createdAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}"
+        $postResponse = Http::contentType('application/json')
+            ->withHeader('Authorization', 'Bearer ' . $session['accessJwt'])
+            ->post('https://bsky.social/xrpc/com.atproto.repo.createRecord', [
+                'repo' => config('services.sns.bluesky.handle'),
+                'collection' => 'app.bsky.feed.post',
+                'record' => [
+                    'text' => $content,
+                    'createdAt' => now()->format('c'),
+                ],
+            ]);
+        /**
+         * RESPONSE BODY
+         * {
+         *   "uri": "at://did:plc:aqlyoppmd2hqlw4axte6mvsb/app.bsky.feed.post/3kkuzywbuny2o",
+         *   "cid": "bafyreib6752heuq5lthnvg7runmurtoqnkdfvuyjhd46ftbodhlz36zxke"
+         * }
+         *
+         * POST URL
+         * https://bsky.app/profile/danakin.bsky.social/post/3kkuzywbuny2o
+         */
+        $url = explode('/', $postResponse->json()['uri']);
+        $id = $url[count($url) - 1];
+
+        $snsMessage->snsLinks()->create([
+            'service' => SnsServices::BlueSky,
+            'url' => $id,
+        ]);
+    }
+
+    public function postToMastodon(SnsMessage $snsMessage): void
+    {
+// TODO: POST TO Mastodon
+        $snsMessage->snsLinks()->create([
+            'service' => SnsServices::Mastodon,
+            'url' => \Str::random(), // TODO: RETRIEVE URL FROM Mastodon
+        ]);
     }
 }
