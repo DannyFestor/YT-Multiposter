@@ -31,4 +31,13 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'sns' => [
+        'twitter' => [
+            'handle' => env('TWITTER_HANDLE'),
+            'api_key' => env('TWITTER_API_KEY'),
+            'api_secret' => env('TWITTER_API_SECRET'),
+            'client_id' => env('TWITTER_CLIENT_ID'),
+            'client_secret' => env('TWITTER_CLIENT_SECRET'),
+        ],
+    ],
 ];

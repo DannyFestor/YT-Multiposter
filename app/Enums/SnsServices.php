@@ -11,7 +11,7 @@ enum SnsServices: string
     public function url(string $url): string
     {
         return match ($this) {
-            self::Twitter => 'https://www.titter.com/' . $url,
+            self::Twitter => 'https://www.twitter.com/' . config('services.sns.twitter.handle') . '/status/' . $url,
             self::BlueSky => 'https://bsky.app/' . $url,
             self::Mastodon => 'https://phpc.social/' . $url,
         };

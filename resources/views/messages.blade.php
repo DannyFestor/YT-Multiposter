@@ -33,7 +33,6 @@
         <div class="flex flex-row flex-wrap gap-4 items-center">
             @foreach(\App\Enums\SnsServices::cases() as $snsService)
                 <?php /** @var \App\Enums\SnsServices $service */ ?>
-
                 <x-service.input :service="$snsService" :checked="old($snsService->value) === 'on'" />
             @endforeach
         </div>
@@ -49,6 +48,7 @@
                 <div class="flex-1 p-4">{{ $SnsMessage->content }}</div>
                 @foreach($SnsMessage->snsLinks as $snsLink)
                     <a href="{{ $snsLink->service->url($snsLink->url) }}"
+                       target="_blank"
                        class="w-[50px] flex items-center justify-center p-2 hover:bg-slate-300">
                         {!! $snsLink->service->icon() !!}
                     </a>
