@@ -43,5 +43,10 @@ return [
             'handle' => env('BLUESKY_HANDLE'),
             'password' => env('BLUESKY_PASSWORD'),
         ],
+        'mastodon' => [
+            'handle' => env('MASTODON_HANDLE'),
+            'instance' => env('MASTODON_INSTANCE'),
+            'token' => env('MASTODON_ACCESS_TOKEN'),
+        ],
     ],
 ];

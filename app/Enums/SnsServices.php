@@ -13,7 +13,7 @@ enum SnsServices: string
         return match ($this) {
             self::Twitter => 'https://www.twitter.com/' . config('services.sns.twitter.handle') . '/status/' . $url,
             self::BlueSky => 'https://bsky.app/profile/' . config('services.sns.bluesky.handle') . '/post/' . $url,
-            self::Mastodon => 'https://phpc.social/' . $url,
+            self::Mastodon => config('services.sns.mastodon.instance') . config('services.sns.mastodon.handle') . '/' . $url,
         };
     }
 

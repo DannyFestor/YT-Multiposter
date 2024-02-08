@@ -23,16 +23,17 @@ class SnsMessageController extends Controller
     {
         $snsMessage = SnsMessage::create($request->validated());
 
+        $content = $request->get('content');
         if ($request->has(SnsServices::Twitter->value) && $request->get(SnsServices::Twitter->value) === 'on') {
-            $this->postToTwitter($request->get('content'), $snsMessage);
+            $this->postToTwitter($content, $snsMessage);
         }
 
         if ($request->has(SnsServices::BlueSky->value) && $request->get(SnsServices::BlueSky->value) === 'on') {
-            $this->postToBlueSky($request->get('content'), $snsMessage);
+            $this->postToBlueSky($content, $snsMessage);
         }
 
         if ($request->has(SnsServices::Mastodon->value) && $request->get(SnsServices::Mastodon->value) === 'on') {
-            $this->postToMastodon($snsMessage);
+            $this->postToMastodon($content, $snsMessage);
         }
 
         return redirect()->route('index')->with('success', 'Messages sent');
@@ -74,7 +75,7 @@ class SnsMessageController extends Controller
         }
     }
 
-    public function postToBlueSky(string $content, ?SnsMessage $snsMessage): void
+    public function postToBlueSky(string $content, SnsMessage $snsMessage): void
     {
         // https://www.docs.bsky.app/docs/get-started
         /*
@@ -134,12 +135,27 @@ class SnsMessageController extends Controller
         ]);
     }
 
-    public function postToMastodon(SnsMessage $snsMessage): void
+    public function postToMastodon(string $content, SnsMessage $snsMessage): void
     {
-// TODO: POST TO Mastodon
+        $response = Http::withHeader('Authorization', 'Bearer ' . config('services.sns.mastodon.token'))
+            ->post('https://phpc.social/api/v1/statuses', [
+                'status' => $content,
+                'language' => 'eng',
+                'visibility' => 'public',
+            ]);
+
+        /**
+         * Response Body:
+         *
+         * { "id": "111894270231189037", ... }
+         *
+         * URL
+         * https://phpc.social/@dannyfestor/111894270231189037
+         */
+
         $snsMessage->snsLinks()->create([
             'service' => SnsServices::Mastodon,
-            'url' => \Str::random(), // TODO: RETRIEVE URL FROM Mastodon
+            'url' => $response->json()['id'] ?? '',
         ]);
     }
 }
